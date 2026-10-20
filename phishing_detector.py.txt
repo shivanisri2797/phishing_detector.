@@ -1,0 +1,111 @@
+
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import (
+    accuracy_score,
+    confusion_matrix,
+    classification_report,
+    ConfusionMatrixDisplay
+)
+
+data = {
+    "email": [
+        "Congratulations you won a free prize click here now",
+        "Your bank account is blocked verify your password immediately",
+        "Urgent claim your reward by clicking this link",
+        "You have won money provide your bank details",
+        "Click here to reset your account password urgently",
+        "Your account will be suspended verify your identity now",
+        "Limited offer claim your free gift today",
+        "Update your payment details to avoid account closure",
+        "Meeting scheduled for tomorrow at ten am",
+        "Please find attached the project report",
+        "Your assignment submission was successful",
+        "The team meeting starts at three pm",
+        "Thank you for your purchase your order is confirmed",
+        "Your college timetable is available on the portal",
+        "Please review the document before the deadline",
+        "Your interview is scheduled for next Monday",
+        "The class notes are uploaded to the website",
+        "Your monthly statement is ready to view"
+    ],
+    "label": [
+        "Phishing", "Phishing", "Phishing", "Phishing",
+        "Phishing", "Phishing", "Phishing", "Phishing",
+        "Safe", "Safe", "Safe", "Safe",
+        "Safe", "Safe", "Safe", "Safe",
+        "Safe", "Safe"
+    ]
+}
+
+df = pd.DataFrame(data)
+
+
+X = df["email"]
+y = df["label"]
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.30,
+    random_state=42,
+    stratify=y
+)
+
+
+vectorizer = TfidfVectorizer()
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+model = LogisticRegression(max_iter=1000)
+model.fit(X_train_tfidf, y_train)
+
+
+y_pred = model.predict(X_test_tfidf)
+accuracy = accuracy_score(y_test, y_pred)
+
+print("\n===== PHISHING EMAIL DETECTOR =====")
+print(f"Model Accuracy: {accuracy * 100:.2f}%")
+
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred, zero_division=0))
+
+labels = ["Phishing", "Safe"]
+cm = confusion_matrix(y_test, y_pred, labels=labels)
+
+display = ConfusionMatrixDisplay(
+    confusion_matrix=cm,
+    display_labels=labels
+)
+
+display.plot(cmap="Blues")
+plt.title("Phishing Email Detection - Confusion Matrix")
+plt.tight_layout()
+plt.show()
+
+while True:
+    email = input(
+        "\nEnter email text (or type 'exit' to quit): "
+    )
+
+    if email.strip().lower() == "exit":
+        print("Program ended.")
+        break
+
+    if not email.strip():
+        print("Please enter some email text.")
+        continue
+
+    email_features = vectorizer.transform([email])
+    prediction = model.predict(email_features)[0]
+
+    print("Prediction:", prediction)
+
+    if prediction == "Phishing":
+        print("Warning: This email may be suspicious!")
+    else:
+        print("This email appears legitimate, but verify it.")
